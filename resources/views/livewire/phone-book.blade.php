@@ -141,7 +141,14 @@
                                      </button>
 
                                 </span>
-                                <span><button class="btn btn-danger">Delete</button></span>
+                                <span>
+                                    <button
+                                        wire:click="destroy({{ $contact->id }})"
+                                        type="button"
+                                        class="btn btn-danger">
+                                        Delete
+                                     </button>
+                                </span>
                             </td>
                         </tr>
                         </tbody>

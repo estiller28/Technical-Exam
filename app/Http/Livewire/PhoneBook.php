@@ -106,5 +106,15 @@ class PhoneBook extends Component
             Log::info($e);
         }
     }
+
+    public function destroy($id){
+        $deleteContact = \App\Models\PhoneBook::find($id)->delete();
+        $this->dispatchBrowserEvent('swal:success', [
+            'type' => 'success',
+            'title' => 'Success',
+            'text' => 'Contacts successfully deleted!',
+        ]);
+        $this->mount();
+    }
 }
 

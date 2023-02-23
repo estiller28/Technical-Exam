@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\AuthenticateApiAcess;
+use App\Http\Controllers\Api\TestApiRequestController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -22,7 +23,6 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::middleware('auth:api')->group( function () {
     Route::resource('contacts', ContactController::class);
 });
-
 
 Route::post('/register', [AuthenticateApiAcess::class, 'register']);
 Route::post('/login', [AuthenticateApiAcess::class, 'login']);

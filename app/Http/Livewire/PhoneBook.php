@@ -3,6 +3,7 @@
 namespace App\Http\Livewire;
 
 use App\Imports\ContactImport;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
@@ -13,12 +14,17 @@ use Livewire\WithFileUploads;
 class PhoneBook extends Component
 {
     use WithFileUploads;
+    public $newColumns = [];
+    public $tempColumnValues = [];
+    public $rows = [];
+    public $newColumnValues = [];
 
+
+    public $data;
     public $template, $contacts, $contact_id, $title, $first_name, $last_name, $mobile_number, $company_name;
     protected $rules = [
         'template' => 'required',
     ];
-
     public function updated($propertyName){
         $this->validateOnly($propertyName);
     }
@@ -27,7 +33,7 @@ class PhoneBook extends Component
         $this->contacts = \App\Models\PhoneBook::all();
     }
     public function render(){
-        return view('livewire.phone-book');
+        return view('livewire.phone-book')->with(['rows' => $this->rows]);
     }
     public function resetInputFields(){
 
@@ -38,30 +44,90 @@ class PhoneBook extends Component
         return Excel::download(new ContactImportTemplate(), 'Import-Contact-Template.xlsx');
     }
 
-    public function importContact(){
-        $this->validate([
-            'template' => 'required|mimes:xls,csv,xlsx',
-        ]);
+    public function uploadContact(){
+        $rows = collect([]);
+        $tempColumns = collect([]);
+
+        if($this->template){
+            $path = $this->template->getRealPath();
+            $data = Excel::toArray([], $path)[0];
+            foreach ($data as $key => $row) {
+                $rows->push($row);
+                $tempColumns->push($row);
+            }
+        }
+        $this->rows  = $rows;
+        $this->tempColumnValues = $tempColumns;
+    }
+
+    public function saveDataFromFileToDB(){
+        $fields = [];
 
         try {
-            if ($this->template) {
-                $upload = Excel::import(new ContactImport(), $this->template);
-                if($upload){
-                    $this->dispatchBrowserEvent('swal:success', [
-                        'type' => 'success',
-                        'title' => 'Success',
-                        'text' => 'Contacts successfully uploaded!',
-                    ]);
-                    $this->emit('importContact');
-                    $this->mount();
+            DB::beginTransaction();
+            foreach ($this->rows as $row){
+                foreach ($row as $key => $value){
+                    $temp = $value;
+                    foreach($this->newColumnValues as $index => $selectedValue){
+                        $fields[$selectedValue] = $temp;
+                    }
                 }
+                dump($fields);
             }
-        } catch (\Exception $e) {
-            Log::error($e);
-            $this->emit('importContact');
-            $this->mount();
+
+            \App\Models\PhoneBook::create($fields);
+
+            DB::commit();
+
+        }catch (\Exception $e){
+            DB::rollBack();
+            $offset = $e;
+            $message = 'Oops!, an error occured at offset {offset}';
+            $context = ['offset' => $offset];
+            Log::error($message, $context);
         }
     }
+//    }
+
+//    public function rearrangeColumns($order)
+//    {
+//        $rearranged = collect([]);
+//        foreach ($this->rows as $key => $row) {
+//            $newRow = [];
+//            foreach ($order as $column) {
+//                $newRow[] = $row[$column];
+//            }
+//            $rearranged->push($newRow);
+//        }
+//        $this->rows = $rearranged;
+//    }
+
+//    public function importContact(){
+//        $this->validate([
+//            'template' => 'required|mimes:xls,csv,xlsx',
+//        ]);
+//
+//        try {
+//            if ($this->template) {
+//                $upload = Excel::import(new ContactImport(), $this->template);
+//                if($upload){
+//                    $this->dispatchBrowserEvent('swal:success', [
+//                        'type' => 'success',
+//                        'title' => 'Success',
+//                        'text' => 'Contacts successfully uploaded!',
+//                    ]);
+//                    $this->emit('importContact');
+//                    $this->mount();
+//                }
+//            }
+//        } catch (\Exception $e) {
+//            Log::error($e);
+//            $this->emit('importContact');
+//            $this->mount();
+//
+//        }
+//    }
+
 
     public function edit($id){
         $contact = \App\Models\PhoneBook::where('id', $id)->first();

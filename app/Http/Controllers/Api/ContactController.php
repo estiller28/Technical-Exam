@@ -90,7 +90,7 @@ class ContactController extends Controller
 
         if($contact){
             return response()->json([
-                'message' => 'Contact successfully updated',
+                'message' => 'Contact successfully deleted',
                 'data' => $contact,
             ]);
         }else{

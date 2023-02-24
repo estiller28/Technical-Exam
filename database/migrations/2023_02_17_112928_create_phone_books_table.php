@@ -21,8 +21,6 @@ return new class extends Migration
             $table->string('mobile_number')->nullable();
             $table->string('company_name')->nullable();
             $table->timestamps();
-
-            $table->index('id');
         });
     }
 

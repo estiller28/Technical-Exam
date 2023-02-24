@@ -24,14 +24,14 @@ function renderTable(){
 }
 
 //
-// document.addEventListener("DOMContentLoaded", () => {
-//     Livewire.hook('message.received', (message, component) => {
-//         $('#phone_books').DataTable().destroy();
-//     })
-//     Livewire.hook('message.processed', (message, component) => {
-//         renderTable();
-//     })
-// });
+document.addEventListener("DOMContentLoaded", () => {
+    Livewire.hook('message.received', (message, component) => {
+        $('#phone_books').DataTable().destroy();
+    })
+    Livewire.hook('message.processed', (message, component) => {
+        renderTable();
+    })
+});
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -41,6 +41,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     Livewire.on('update', () => {
         $('#updateContactModal').modal('hide');
+    })
+
+    Livewire.on('saveDataFromFileToDB', () => {
+        $('#uploadContactModal').modal('hide');
     })
 });
 

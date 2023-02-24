@@ -5,6 +5,7 @@ namespace App\Http\Livewire;
 use App\Imports\ContactImport;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ContactImportTemplate;
@@ -18,6 +19,7 @@ class PhoneBook extends Component
     public $tempColumnValues = [];
     public $rows = [];
     public $newColumnValues = [];
+    public $allRows;
 
 
     public $data;
@@ -45,6 +47,7 @@ class PhoneBook extends Component
     }
 
     public function uploadContact(){
+        $this->validate();
         $rows = collect([]);
         $tempColumns = collect([]);
 
@@ -58,24 +61,31 @@ class PhoneBook extends Component
         }
         $this->rows  = $rows;
         $this->tempColumnValues = $tempColumns;
+        $this->allRows  = array_slice($this->rows->toArray() ,1);
+
     }
 
     public function saveDataFromFileToDB(){
-        $fields = [];
-
-        try {
+        try{
             DB::beginTransaction();
-            foreach ($this->rows as $row){
-                foreach ($row as $key => $value){
-                    $temp = $value;
-                    foreach($this->newColumnValues as $index => $selectedValue){
-                        $fields[$selectedValue] = $temp;
-                    }
-                }
-                dump($fields);
+            foreach ($this->allRows as $row){
+                $formattedColumns = $this->newColumnValues;
+
+                $formattedColumns = array_map(function($value){
+                    return Str::snake($value);
+                }, $formattedColumns);
+
+                $dataToBeInsertedToDB  = array_combine($formattedColumns, $row);
+                DB::table('phone_books')->insert($dataToBeInsertedToDB);
             }
 
-            \App\Models\PhoneBook::create($fields);
+            $this->dispatchBrowserEvent('swal:success', [
+                'type' => 'success',
+                'title' => 'Success',
+                'text' => 'Contacts uploaded successfully!',
+            ]);
+            $this->mount();
+            $this->emit('saveDataFromFileToDB');
 
             DB::commit();
 
@@ -87,46 +97,6 @@ class PhoneBook extends Component
             Log::error($message, $context);
         }
     }
-//    }
-
-//    public function rearrangeColumns($order)
-//    {
-//        $rearranged = collect([]);
-//        foreach ($this->rows as $key => $row) {
-//            $newRow = [];
-//            foreach ($order as $column) {
-//                $newRow[] = $row[$column];
-//            }
-//            $rearranged->push($newRow);
-//        }
-//        $this->rows = $rearranged;
-//    }
-
-//    public function importContact(){
-//        $this->validate([
-//            'template' => 'required|mimes:xls,csv,xlsx',
-//        ]);
-//
-//        try {
-//            if ($this->template) {
-//                $upload = Excel::import(new ContactImport(), $this->template);
-//                if($upload){
-//                    $this->dispatchBrowserEvent('swal:success', [
-//                        'type' => 'success',
-//                        'title' => 'Success',
-//                        'text' => 'Contacts successfully uploaded!',
-//                    ]);
-//                    $this->emit('importContact');
-//                    $this->mount();
-//                }
-//            }
-//        } catch (\Exception $e) {
-//            Log::error($e);
-//            $this->emit('importContact');
-//            $this->mount();
-//
-//        }
-//    }
 
 
     public function edit($id){
